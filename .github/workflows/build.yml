@@ -72,7 +72,10 @@ jobs:
             -Dtests=enabled \
             build
           meson compile -C build
-
+      - uses: actions/upload-artifact@v3
+        with:
+          name: android-intel
+          path: frida-gum/build
   android-arm:
     runs-on: ubuntu-latest
     strategy:
@@ -106,3 +109,7 @@ jobs:
           meson compile -C build
       - name: Package
         run: tar -C build/tests -czf /tmp/runner.tar.gz gum-tests data/
+      - uses: actions/upload-artifact@v3
+        with:
+          name: android-arm
+          path: frida-gum/build
