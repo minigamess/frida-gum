@@ -45,7 +45,7 @@ jobs:
     runs-on: macos-10.15
     strategy:
       matrix:
-        arch: [x86, x86_64]
+        arch: [x86_64]
       fail-fast: false
     steps:
       - name: Check out repo
@@ -75,12 +75,12 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: android-intel
-          path: build
+          path: build/gum
   android-arm:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [arm, arm64]
+        arch: [arm64]
       fail-fast: false
     steps:
       - name: Check out repo
@@ -112,4 +112,4 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: android-arm
-          path: build
+          path: build/gum
