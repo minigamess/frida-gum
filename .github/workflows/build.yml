@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: 3.11
+  MESON_VERSION: 0.64.0
+
+jobs:
+  gir:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '${{ env.PYTHON_VERSION }}'
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install \
+            gobject-introspection \
+            libdwarf-dev \
+            libelf-dev \
+            libgirepository1.0-dev \
+            libglib2.0-dev \
+            libjson-glib-dev \
+            libsoup-3.0-dev \
+            libsqlite3-dev \
+            libunwind-dev \
+            ninja-build
+          pip install meson==${{ env.MESON_VERSION }}
+      - name: Build
+        run: |
+          meson setup \
+            -Doptimization=s \
+            -Dgumpp=enabled \
+            -Dgumjs=enabled \
+            build
+          meson compile -C build
+
+  android-intel:
+    runs-on: macos-10.15
+    strategy:
+      matrix:
+        arch: [x86, x86_64]
+      fail-fast: false
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '${{ env.PYTHON_VERSION }}'
+      - name: Install dependencies
+        run: |
+          pip install meson==${{ env.MESON_VERSION }}
+          .github/env/bootstrap.sh macos-x86_64 android-${{ matrix.arch }}
+      - name: Build
+        run: |
+          export PATH="/tmp/toolchain/bin:$PATH"
+          meson setup \
+            --native-file /tmp/native.txt \
+            --cross-file /tmp/cross.txt \
+            --default-library static \
+            -Doptimization=s \
+            -Dwerror=true \
+            -Dgumpp=enabled \
+            -Dgumjs=enabled \
+            -Dtests=enabled \
+            build
+          meson compile -C build
+
+  android-arm:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [arm, arm64]
+      fail-fast: false
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '${{ env.PYTHON_VERSION }}'
+      - name: Install dependencies
+        run: |
+          pip install meson==${{ env.MESON_VERSION }}
+          .github/env/bootstrap.sh linux-x86_64 android-${{ matrix.arch }}
+      - name: Build
+        run: |
+          export PATH="/tmp/toolchain/bin:$PATH"
+          meson setup \
+            --native-file /tmp/native.txt \
+            --cross-file /tmp/cross.txt \
+            --default-library static \
+            -Doptimization=s \
+            -Dwerror=true \
+            -Dgumpp=enabled \
+            -Dgumjs=enabled \
+            -Dtests=enabled \
+            build
+          meson compile -C build
+      - name: Package
+        run: tar -C build/tests -czf /tmp/runner.tar.gz gum-tests data/
